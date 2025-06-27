@@ -156,12 +156,10 @@ def summarize_ticker(ticker, reddit_posts, news_items):
 
 ".join(reddit_texts + news_texts)[:7000]
 
-    prompt = f"""
-    Summarize all the Reddit posts and news headlines below about ${ticker} in 2 clickbait-style paragraphs. Then include a TL;DR of 3 bullet points.
+    prompt = f"""Summarize all the Reddit posts and news headlines below about ${ticker} in 2 clickbait-style paragraphs. Then include a TL;DR of 3 bullet points.
 
-    Text:
-    {combined}
-    """
+Text:
+{combined}"""
 
     response = openai.chat.completions.create(
         model="gpt-4",
