@@ -1,0 +1,6 @@
+praw
+openai
+feedparser
+yfinance
+snscrape
+matplotlib
