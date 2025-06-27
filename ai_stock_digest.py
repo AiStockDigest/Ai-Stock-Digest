@@ -218,8 +218,5 @@ def run_daily_digest():
         f.write(html)
     print("✔ AI Stock Digest written to daily_digest.html")
 
-
 if __name__ == "__main__":
     run_daily_digest()
-
-
