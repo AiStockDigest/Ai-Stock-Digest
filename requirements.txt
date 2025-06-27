@@ -5,3 +5,4 @@ yfinance
 snscrape
 matplotlib
 fuzzywuzzy[speedup]
+textblob
