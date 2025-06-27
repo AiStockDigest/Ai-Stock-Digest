@@ -19,6 +19,10 @@ reddit = praw.Reddit(
 )
 reddit.read_only = True
 
+# DEBUG: TEMP PRINT TO CONFIRM ENV VARIABLES ARE WORKING (REMOVE AFTER TESTING)
+print("CLIENT_ID:", os.getenv("REDDIT_CLIENT_ID"))
+print("CLIENT_SECRET:", os.getenv("REDDIT_CLIENT_SECRET"))
+
 # OpenAI key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
