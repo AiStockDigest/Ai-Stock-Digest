@@ -164,6 +164,9 @@ def summarize_ticker(ticker, reddit_posts, news_items):
     except Exception as e:
         print(f"Error summarizing {ticker}:", e)
         return f"Summary unavailable for {ticker}."
+    except Exception as e:
+        print(f"Error summarizing {ticker}:", e)
+        return f"Summary unavailable for {ticker}."
 
 Text:
 {combined}"""
