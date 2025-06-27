@@ -2,8 +2,11 @@ name: Build and Publish Daily Digest
 
 on:
   schedule:
-    - cron: '0 12 * * *'  # runs daily at 8 AM ET
+    - cron: '0 12 * * *'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -27,15 +30,14 @@ jobs:
           REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
         run: python ai_stock_digest.py
 
-      - name: Deploy to GitHub Pages
+      - name: Move output
         run: |
           mkdir -p out
           mv daily_digest.html out/index.html
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git fetch
-          git checkout -B gh-pages
-          mv out/index.html .
-          git add index.html
-          git commit -m "update: daily digest"
-          git push origin gh-pages --force
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./out
+          publish_branch: gh-pages
