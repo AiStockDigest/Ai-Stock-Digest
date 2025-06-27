@@ -111,3 +111,90 @@ def get_top_discussed_tickers(limit=10, subs=["stocks", "wallstreetbets"], hours
 
 TICKER_LIST = get_top_discussed_tickers()
 TICKER_LOOKUP = build_ticker_lookup()
+
+def scrape_reddit(subs=["stocks", "wallstreetbets"], limit=50):
+    posts = []
+    for sub in subs:
+        subreddit = reddit.subreddit(sub)
+        for post in subreddit.hot(limit=limit):
+            tickers = re.findall(r'\$[A-Z]{1,5}', post.title + " " + post.selftext)
+            for t in tickers:
+                posts.append({
+                    "ticker": t.strip("$"),
+                    "title": post.title,
+                    "text": post.selftext,
+                    "url": post.url,
+                    "timestamp": datetime.utcfromtimestamp(post.created_utc).isoformat()
+                })
+    return posts
+
+def scrape_news():
+    feeds = []
+    base_url = "https://news.google.com/rss/search?q={ticker}+stock&hl=en-US&gl=US&ceid=US:en"
+    for ticker in TICKER_LIST:
+        url = base_url.format(ticker=ticker)
+        parsed = feedparser.parse(url)
+        for entry in parsed.entries[:5]:
+            feeds.append({
+                "ticker": ticker,
+                "title": entry.title,
+                "link": entry.link,
+                "published": entry.published
+            })
+    return feeds
+
+def get_top_tickers(reddit_posts, news_items):
+    all_mentions = [p["ticker"] for p in reddit_posts] + [n["ticker"] for n in news_items]
+    most_common = Counter(all_mentions).most_common(5)
+    return [t[0] for t in most_common]
+
+def summarize_ticker(ticker, reddit_posts, news_items):
+    reddit_texts = [p['title'] + "\n" + p['text'] for p in reddit_posts if p['ticker'] == ticker]
+    news_texts = [n['title'] for n in news_items if n['ticker'] == ticker]
+    combined = "\n\n".join(reddit_texts + news_texts)[:7000]
+
+    prompt = f"""
+    Summarize all the Reddit posts and news headlines below about ${ticker} in 2 clickbait-style paragraphs. Then include a TL;DR of 3 bullet points.
+
+    Text:
+    {combined}
+    """
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4",  # or "gpt-3.5-turbo" to save cost
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response["choices"][0]["message"]["content"]
+
+def build_html(summaries):
+    html_blocks = ""
+    for ticker, content in summaries.items():
+        html_blocks += f"<h2>${ticker}</h2><div>{content}</div><hr>"
+    return f"""
+    <html>
+    <head><title>AI Stock Digest - Top 5</title></head>
+    <body>
+    <h1>🔥 Top 5 Stocks Today</h1>
+    {html_blocks}
+    <footer><br><i>Updated daily by AI Digest</i></footer>
+    </body>
+    </html>
+    """
+
+def run_daily_digest():
+    reddit_data = scrape_reddit()
+    news_data = scrape_news()
+    top_5 = get_top_tickers(reddit_data, news_data)
+
+    summaries = {}
+    for ticker in top_5:
+        summaries[ticker] = summarize_ticker(ticker, reddit_data, news_data)
+
+    html = build_html(summaries)
+    with open("daily_digest.html", "w") as f:
+        f.write(html)
+    print("✔ AI Stock Digest written to daily_digest.html")
+
+if __name__ == "__main__":
+    run_daily_digest()
+
