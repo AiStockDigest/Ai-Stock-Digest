@@ -149,11 +149,17 @@ def get_top_tickers(reddit_posts, news_items):
     return [t[0] for t in most_common]
 
 def summarize_ticker(ticker, reddit_posts, news_items):
-    reddit_texts = [p['title'] + "\n" + p['text'] for p in reddit_posts if p['ticker'] == ticker]
+    reddit_texts = [p['title'] + "
+" + p['text'] for p in reddit_posts if p['ticker'] == ticker]
     news_texts = [n['title'] for n in news_items if n['ticker'] == ticker]
-    combined = "\n\n".join(reddit_texts + news_texts)[:7000]
+    combined = "
 
-    prompt = f"Summarize all the Reddit posts and news headlines below about ${ticker} in 2 clickbait-style paragraphs. Then include a TL;DR of 3 bullet points.\n\nText:\n{combined}"
+".join(reddit_texts + news_texts)[:7000]
+
+    prompt = f"Summarize all the Reddit posts and news headlines below about ${ticker} in 2 clickbait-style paragraphs. Then include a TL;DR of 3 bullet points.
+
+Text:
+{combined}"
 
     try:
         response = openai.chat.completions.create(
@@ -167,30 +173,6 @@ def summarize_ticker(ticker, reddit_posts, news_items):
     except Exception as e:
         print(f"Error summarizing {ticker}:", e)
         return f"Summary unavailable for {ticker}."
-
-Text:
-{combined}"""
-
-    response = openai.chat.completions.create(
-        model="gpt-4",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content
-
-".join(reddit_texts + news_texts)[:7000]
-
-    prompt = f"""
-    Summarize all the Reddit posts and news headlines below about ${ticker} in 2 clickbait-style paragraphs. Then include a TL;DR of 3 bullet points.
-
-    Text:
-    {combined}
-    """
-
-    response = openai.chat.completions.create(
-        model="gpt-4",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content
 
 def build_html(summaries):
     html_blocks = ""
@@ -224,3 +206,5 @@ def run_daily_digest():
 
 if __name__ == "__main__":
     run_daily_digest()
+
+
