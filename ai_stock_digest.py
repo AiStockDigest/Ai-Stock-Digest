@@ -1,32 +1,129 @@
 import os
 import sys
+import re
 import requests
-from datetime import datetime, timedelta
-from collections import Counter
+from datetime import datetime, timedelta, timezone
+from collections import Counter, defaultdict
 import openai
 from textblob import TextBlob
+import praw
 
 # --- CONFIG ---
 REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
+REDDIT_USER_AGENT = "ai-stock-digest-script"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo-16k")  # <-- FIXED HERE!
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo-16k")
 REDDIT_SUBS = ["stocks", "wallstreetbets"]
-POST_LIMIT = 20
-NEWS_LIMIT = 30
+POST_LIMIT = 250
+COMMENT_LIMIT = 500
+
+TICKER_COMPANY_MAP = {
+    "AAPL": "Apple",
+    "TSLA": "Tesla",
+    "NVDA": "Nvidia",
+    "MSFT": "Microsoft",
+    "GOOG": "Alphabet",
+    "AMZN": "Amazon",
+    "META": "Meta Platforms",
+    "AMD": "Advanced Micro Devices",
+    "NFLX": "Netflix",
+    "BRK.A": "Berkshire Hathaway",
+    "BRK.B": "Berkshire Hathaway",
+    "GOOGL": "Alphabet",
+    # Add more as needed
+}
 
 # --- LOGGING ---
 def log(msg):
     print(f"[{datetime.utcnow().isoformat()}] {msg}", flush=True)
 
-# --- SETUP ---
 if not OPENAI_API_KEY:
     log("Missing OpenAI API key. Exiting.")
+    sys.exit(1)
+if not REDDIT_CLIENT_ID or not REDDIT_CLIENT_SECRET:
+    log("Missing Reddit client credentials. Exiting.")
     sys.exit(1)
 
 openai.api_key = OPENAI_API_KEY
 
-# --- YAHOO FINANCE ---
+def get_ticker_patterns():
+    patterns = []
+    for ticker, name in TICKER_COMPANY_MAP.items():
+        patterns.append((ticker, re.compile(rf"\b{re.escape(ticker)}\b", re.IGNORECASE)))
+        patterns.append((ticker, re.compile(rf"\b{re.escape(name)}\b", re.IGNORECASE)))
+        # Add known variants
+        if ticker == "GOOG":
+            patterns.append((ticker, re.compile(r"\bgoogle\b", re.IGNORECASE)))
+        if ticker == "META":
+            patterns.append((ticker, re.compile(r"\bfacebook\b", re.IGNORECASE)))
+        if ticker == "AMZN":
+            patterns.append((ticker, re.compile(r"\bamazon\b", re.IGNORECASE)))
+        if ticker == "TSLA":
+            patterns.append((ticker, re.compile(r"\belon\b", re.IGNORECASE)))
+    return patterns
+
+def scrape_reddit_mentions(subs, post_limit, comment_limit):
+    reddit = praw.Reddit(
+        client_id=REDDIT_CLIENT_ID,
+        client_secret=REDDIT_CLIENT_SECRET,
+        user_agent=REDDIT_USER_AGENT,
+    )
+    since = datetime.now(timezone.utc) - timedelta(days=1)
+    patterns = get_ticker_patterns()
+    mention_counter = Counter()
+    posts_data = []
+    # Submissions
+    for sub in subs:
+        log(f"Scanning posts for /r/{sub}")
+        for submission in reddit.subreddit(sub).new(limit=post_limit):
+            created = datetime.fromtimestamp(submission.created_utc, tz=timezone.utc)
+            if created < since:
+                continue
+            text = f"{submission.title} {submission.selftext}"
+            found = set()
+            for ticker, pat in patterns:
+                if pat.search(text):
+                    mention_counter[ticker] += 1
+                    found.add(ticker)
+            if found:
+                posts_data.append({
+                    "tickers": list(found),
+                    "title": submission.title,
+                    "text": submission.selftext,
+                    "url": f"https://reddit.com{submission.permalink}",
+                    "timestamp": created.isoformat(),
+                    "score": submission.score,
+                    "type": "post"
+                })
+    # Comments
+    for sub in subs:
+        log(f"Scanning comments for /r/{sub}")
+        for comment in reddit.subreddit(sub).comments(limit=comment_limit):
+            created = datetime.fromtimestamp(comment.created_utc, tz=timezone.utc)
+            if created < since:
+                continue
+            text = comment.body
+            found = set()
+            for ticker, pat in patterns:
+                if pat.search(text):
+                    mention_counter[ticker] += 1
+                    found.add(ticker)
+            if found:
+                posts_data.append({
+                    "tickers": list(found),
+                    "title": "",
+                    "text": comment.body,
+                    "url": f"https://reddit.com{comment.permalink}",
+                    "timestamp": created.isoformat(),
+                    "score": comment.score,
+                    "type": "comment"
+                })
+    return mention_counter, posts_data
+
+def get_top5_tickers(mention_counter):
+    return [ticker for ticker, _ in mention_counter.most_common(5)]
+
 def get_yahoo_price_and_stats(ticker):
     url = f'https://query1.finance.yahoo.com/v7/finance/quote?symbols={ticker}'
     try:
@@ -50,49 +147,6 @@ def get_yahoo_earnings_date(ticker):
     except Exception:
         return "N/A"
 
-# --- DATA SCRAPING (DUMMY FOR DEMO) ---
-def get_all_us_tickers():
-    # Replace with a real US tickers list if you want
-    return ["AAPL", "TSLA", "NVDA", "MSFT", "GOOG"]
-
-def build_ticker_lookup(ticker_list):
-    return {t: [t.lower()] for t in ticker_list}
-
-def scrape_reddit(subs=REDDIT_SUBS, limit=POST_LIMIT):
-    # Dummy data for demo; replace with praw or pushshift as needed
-    now = datetime.utcnow()
-    data = []
-    for t in ["AAPL", "TSLA", "NVDA", "MSFT", "GOOG"]:
-        for i in range(limit):
-            data.append({
-                "ticker": t,
-                "title": f"{t} Reddit post {i+1}",
-                "text": f"Discussion about {t} number {i+1}",
-                "url": f"https://reddit.com/r/stocks/{t.lower()}/post{i+1}",
-                "timestamp": (now - timedelta(hours=i)).isoformat(),
-                "score": 100 - i  # Simulate upvotes
-            })
-    return data
-
-def scrape_news():
-    # Dummy data for demo; replace with real news scraping
-    data = []
-    for t in ["AAPL", "TSLA", "NVDA", "MSFT", "GOOG"]:
-        for i in range(NEWS_LIMIT):
-            data.append({
-                "ticker": t,
-                "title": f"{t} news headline {i+1}",
-                "url": f"https://news.com/{t.lower()}/news{i+1}",
-                "timestamp": (datetime.utcnow() - timedelta(hours=i)).isoformat()
-            })
-    return data
-
-def get_top_tickers(reddit_posts, news_items):
-    all_mentions = [p["ticker"] for p in reddit_posts] + [n["ticker"] for n in news_items]
-    most_common = Counter(all_mentions).most_common(5)
-    return [t[0] for t in most_common]
-
-# --- SENTIMENT & HIGHLIGHTS ---
 def analyze_sentiment(posts):
     sentiments = []
     for p in posts:
@@ -121,7 +175,7 @@ def get_news_sentiment(news_items, ticker):
     return "neutral"
 
 def get_reddit_highlight(reddit_posts, ticker):
-    filtered = [p for p in reddit_posts if p['ticker'] == ticker]
+    filtered = [p for p in reddit_posts if ticker in p['tickers']]
     if not filtered:
         return None
     return max(filtered, key=lambda p: p.get("score", 0))
@@ -130,7 +184,7 @@ def get_reddit_mentions_over_time(reddit_posts, ticker, days=7):
     now = datetime.utcnow()
     counts = [0]*days
     for p in reddit_posts:
-        if p['ticker'] != ticker:
+        if ticker not in p['tickers']:
             continue
         ts = datetime.fromisoformat(p['timestamp'])
         day_delta = (now - ts).days
@@ -174,7 +228,6 @@ def human_number(n):
     except Exception:
         return str(n)
 
-# --- SMART SUMMARIZATION ---
 def summarize_news(ticker, news_items):
     news_texts = [n['title'] for n in news_items if n['ticker'] == ticker]
     if not news_texts:
@@ -202,7 +255,7 @@ News headlines:
         return f"News summary unavailable for {ticker}. Error: {e}"
 
 def summarize_reddit(ticker, reddit_posts, sentiment):
-    reddit_texts = [p['title'] + "\n" + p['text'] for p in reddit_posts if p['ticker'] == ticker]
+    reddit_texts = [p['title'] + "\n" + p['text'] for p in reddit_posts if ticker in p['tickers']]
     if not reddit_texts:
         return "No recent Reddit discussions found."
     combined = "\n\n".join(reddit_texts)[:7000]
@@ -230,7 +283,6 @@ Reddit posts:
     except Exception as e:
         return f"Reddit summary unavailable for {ticker}. Error: {e}"
 
-# --- HTML GENERATION ---
 def build_html(summaries, mention_counts, reddit_posts, news_items, last_updated=None):
     if last_updated is None:
         last_updated = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
@@ -469,26 +521,45 @@ def build_html(summaries, mention_counts, reddit_posts, news_items, last_updated
 </html>
 """
 
+# ---- DUMMY NEWS SCRAPER (same as before, for demo) ----
+def scrape_news():
+    data = []
+    for t in TICKER_COMPANY_MAP.keys():
+        for i in range(30):
+            data.append({
+                "ticker": t,
+                "title": f"{t} news headline {i+1}",
+                "url": f"https://news.com/{t.lower()}/news{i+1}",
+                "timestamp": (datetime.utcnow() - timedelta(hours=i)).isoformat()
+            })
+    return data
+
 # --- MAIN ---
 def run_daily_digest():
     try:
-        log("Starting Reddit scrape...")
-        reddit_data = scrape_reddit()
-        log("Starting news scrape...")
+        log("Scraping Reddit for most mentioned stocks in the last 24h...")
+        mention_counter, posts_data = scrape_reddit_mentions(REDDIT_SUBS, POST_LIMIT, COMMENT_LIMIT)
+        if not mention_counter:
+            log("No stock mentions found in the last 24 hours.")
+            with open("daily_digest.html", "w", encoding="utf-8") as f:
+                f.write("<html><body><h1>No popular stock mentions found in the last 24 hours.</h1></body></html>")
+            return
+        top5 = get_top5_tickers(mention_counter)
+        log(f"Top 5 mentioned tickers: {top5}")
+
         news_data = scrape_news()
-        log("Determining top 5 tickers...")
-        top_5 = get_top_tickers(reddit_data, news_data)
         summaries = {}
-        mention_counts = {ticker: sum(1 for p in reddit_data if p["ticker"] == ticker) for ticker in top_5}
-        for ticker in top_5:
-            sentiment = analyze_sentiment([p for p in reddit_data if p['ticker'] == ticker])
+        mention_counts = {ticker: mention_counter.get(ticker, 0) for ticker in top5}
+        for ticker in top5:
+            ticker_reddit_posts = [p for p in posts_data if ticker in p['tickers']]
+            sentiment = analyze_sentiment(ticker_reddit_posts)
             news_summary = summarize_news(ticker, news_data)
-            reddit_summary = summarize_reddit(ticker, reddit_data, sentiment)
+            reddit_summary = summarize_reddit(ticker, posts_data, sentiment)
             summaries[ticker] = {
                 "news": news_summary,
                 "reddit": reddit_summary
             }
-        html = build_html(summaries, mention_counts, reddit_data, news_data)
+        html = build_html(summaries, mention_counts, posts_data, news_data)
         with open("daily_digest.html", "w", encoding="utf-8") as f:
             f.write(html)
         log("✔ AI Stock Digest written to daily_digest.html")
