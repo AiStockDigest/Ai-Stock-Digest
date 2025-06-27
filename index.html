@@ -1,29 +1,356 @@
-<html><head><title>AI Stock Digest - Top 5</title></head><body><h1>Top 5 Stocks Today</h1><h2>$SANA</h2><div>$SANA skyrockets by 13% in one day - what's driving the surge? Find out why hedge funds are eyeing Sana Biotechnology Inc. (NASDAQ:SANA) as the best biotech penny stock to buy in this exciting market update.
 
-- $SANA stock jumps 13% in a single day
-- Hedge funds eyeing Sana Biotechnology Inc. as a top biotech penny stock
-- What's behind the surge in SANA's stock price?</div><hr><h2>$BTBT</h2><div>Reddit users buzzing about Bit Digital's latest announcement! Discover why $BTBT is planning a huge Ethereum investment and how this major share offering could shake up the market. Don't miss out on the potential gains!
-
-Stock in Bit Digital (BTBT) takes a small dip - is now the time to buy? Get the scoop on why this move could be a great opportunity for savvy investors to jump in. Find out what you need to know about $BTBT on Yahoo Finance now! 
-
-TL;DR:
-- Bit Digital plans massive Ethereum investment with major share offering
-- $BTBT stock dips slightly - potential buying opportunity
-- Stay updated on Yahoo Finance for more info on Bit Digital's movements</div><hr><h2>$ETH</h2><div>The value of $ETH takes a nosedive as Bit Digital shifts towards Ethereum, causing their stock to plummet by 15%! Grayscale Ethereum Trust shares also dip significantly in a surprising turn of events - find out why the market is reacting this way.
-
-1. Bit Digital's $ETH pivot leads to a 15% drop in value
-2. Grayscale Ethereum Trust shares gap down unexpectedly
-3. Market reacts negatively to news surrounding Ethereum movements</div><hr><h2>$NKE</h2><div>Nike stock sees a rollercoaster ride as earnings surprise investors - but is it all bad news? Find out the shocking truth behind Nike's recent fluctuations and what it means for the market.
-
-Despite fears of a major dip, Nike stocks actually rebound as earnings prove to be better than expected. Is this just a temporary boost or a sign of things to come? Stay tuned to find out the latest updates on Nike's financial future.
-
-TL;DR:
-- Nike stock jumps after earnings report
-- Earnings were better than feared
-- Market braces for Q4 earnings, stock hits 6-year low</div><hr><h2>$CORZ</h2><div>- Reddit users and news headlines are abuzz with rumors of Core Scientific's buyout of CoreWeave, causing $CORZ stock to spike. Is this the perfect time to buy in?
-- Stocks like Nike and Core Scientific are on the move after hours, with Core Scientific grabbing attention for its potential buyout. Should investors be jumping on the $CORZ bandwagon?
-
-TL;DR:
-- Core Scientific's stock, $CORZ, is spiking amid rumors of a buyout of CoreWeave.
-- Investors are eyeing $CORZ closely as it makes big moves after hours.
-- Is now the time to invest in Core Scientific?</div><hr><footer><br><i>Updated daily by AI Digest</i></footer></body></html>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Stock Digest - Top 5</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+    body {
+        background: #181c1f;
+        color: #e6e9ef;
+        font-family: 'Segoe UI', 'Helvetica Neue', Arial, 'Liberation Sans', sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+    header {
+        background: linear-gradient(90deg, #232526 0%, #414345 100%);
+        padding: 2rem 1rem 1rem 1rem;
+        text-align: center;
+        border-bottom: 2px solid #30363d;
+    }
+    h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.2rem;
+    }
+    .subtitle {
+        color: #9da5b4;
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+    .timestamp {
+        color: #6d758d;
+        font-size: 0.95rem;
+        margin-top: 0.4rem;
+    }
+    .container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        justify-content: center;
+        padding: 2rem 1rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    .card {
+        background: #21262d;
+        border-radius: 1.3rem;
+        box-shadow: 0 6px 24px 0 #000c1c44;
+        padding: 2rem 1.7rem 1.5rem 1.7rem;
+        margin-bottom: 1.5rem;
+        width: 390px;
+        max-width: 97vw;
+        border: 1.5px solid #30363d;
+        transition: transform 0.15s;
+    }
+    .card:hover {
+        transform: translateY(-7px) scale(1.022);
+        box-shadow: 0 16px 32px 0 #000c1c55;
+    }
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 0.8rem;
+        border-bottom: 1px solid #2c313a;
+        padding-bottom: 0.2rem;
+    }
+    .ticker {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #6cf0f7;
+        letter-spacing: 1px;
+    }
+    .badges {
+        font-size: 1.09rem;
+        font-weight: 600;
+        color: #ffb85c;
+        border-radius: 0.5rem;
+        padding: 0.18rem 0.7rem;
+        margin-left: 0.4rem;
+    }
+    .card-row {
+        display: flex;
+        align-items: center;
+        gap: 1.2rem;
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+    }
+    .price {
+        font-weight: 500;
+        font-size: 1.2rem;
+    }
+    .sparkline {
+        vertical-align: middle;
+        margin-left: 0.3rem;
+    }
+    .stats {
+        font-size: 0.97rem;
+        color: #b0bac7;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+    .mentions {
+        color: #ffb85c;
+        font-size: 1.01rem;
+        margin-bottom: 0.6rem;
+        font-weight: 500;
+        display: flex;
+        gap: 2rem;
+    }
+    .section {
+        margin-bottom: 1.1rem;
+        padding-bottom: 0.3rem;
+    }
+    h3 {
+        font-size: 1.17rem;
+        margin-bottom: 0.5rem;
+        font-weight: 550;
+        color: #6cf0f7;
+        letter-spacing: 0.5px;
+    }
+    .links {
+        font-size: 1rem;
+        margin-top: 0.8rem;
+        color: #75e3ff;
+    }
+    .links a, .links a:visited {
+        color: #75e3ff;
+        text-decoration: underline;
+        transition: color 0.2s;
+    }
+    .links a:hover {
+        color: #e6e9ef;
+    }
+    .highlight {
+        background: #2c2c36;
+        border-radius: 0.6rem;
+        margin-top: 0.6rem;
+        padding: 0.7rem 1rem 0.4rem 1rem;
+        color: #fff0c0;
+        font-size: 0.98rem;
+    }
+    footer {
+        text-align: center;
+        font-size: 1.1rem;
+        color: #6d758d;
+        margin-bottom: 1.2rem;
+        margin-top: 2.7rem;
+    }
+    @media (max-width: 900px) {
+        .container {
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1rem 0.5rem;
+        }
+        .card {
+            width: 99vw;
+            max-width: 100vw;
+        }
+    }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>AI Stock Digest</h1>
+        <div class="subtitle">The hottest stocks on Reddit & in the news</div>
+        <div class="timestamp">Last updated: 2025-06-27 09:59 UTC</div>
+    </header>
+    <div class="container">
+        
+        <div class="card">
+            <div class="card-header">
+                <span class="ticker">$AAPL</span>
+                <span class="badges"></span>
+            </div>
+            <div class="card-row">
+                <span class="price">$N/A <span style="color:#65e19c;font-weight:600;">(+0.00%)</span></span>
+                <span class="sparkline"><svg width="60" height="24" viewBox="0 0 60 24" style="vertical-align:middle"><rect x="0" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="8" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="16" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="24" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="32" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="40" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="48" y="0" width="7" height="24" fill="#6cf0f7"/></svg></span>
+            </div>
+            <div class="stats">
+                <span>Market Cap: N/A</span>
+                <span>P/E: N/A</span>
+                <span>Vol: N/A</span>
+                <span>Earnings: N/A</span>
+            </div>
+            <div class="mentions">
+                <span>Reddit mentions (7d): <b>20</b> <svg width="60" height="24" viewBox="0 0 60 24" style="vertical-align:middle"><rect x="0" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="8" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="16" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="24" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="32" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="40" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="48" y="0" width="7" height="24" fill="#6cf0f7"/></svg></span>
+                <span>News sentiment: ⚪ Neutral</span>
+            </div>
+            <div class="section">
+                <h3>📰 News Summary</h3>
+                <div>News summary unavailable for AAPL. Error: Error code: 403 - {'error': {'message': 'Project `proj_ICRNl8A8JSeew7DaB1FvAW79` does not have access to model `gpt-3.5-turbo`', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}</div>
+            </div>
+            <div class="section">
+                <h3>🤖 Reddit Summary</h3>
+                <div>Reddit summary unavailable for AAPL. Error: Error code: 403 - {'error': {'message': 'Project `proj_ICRNl8A8JSeew7DaB1FvAW79` does not have access to model `gpt-3.5-turbo`', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}</div>
+            </div>
+            <div class="links">
+                <a href="https://finance.yahoo.com/quote/AAPL" target="_blank">Yahoo Finance</a> | 
+                <a href="https://www.tradingview.com/symbols/AAPL/" target="_blank">TradingView</a> | 
+                <a href="https://www.reddit.com/search/?q=%24AAPL" target="_blank">Reddit Search</a>
+            </div>
+            <div class='highlight'>Most upvoted Reddit post:<br><b>AAPL Reddit post 1</b><br><a href='https://reddit.com/r/stocks/aapl/post1' target='_blank'>View post</a></div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <span class="ticker">$TSLA</span>
+                <span class="badges"></span>
+            </div>
+            <div class="card-row">
+                <span class="price">$N/A <span style="color:#65e19c;font-weight:600;">(+0.00%)</span></span>
+                <span class="sparkline"><svg width="60" height="24" viewBox="0 0 60 24" style="vertical-align:middle"><rect x="0" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="8" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="16" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="24" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="32" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="40" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="48" y="0" width="7" height="24" fill="#6cf0f7"/></svg></span>
+            </div>
+            <div class="stats">
+                <span>Market Cap: N/A</span>
+                <span>P/E: N/A</span>
+                <span>Vol: N/A</span>
+                <span>Earnings: N/A</span>
+            </div>
+            <div class="mentions">
+                <span>Reddit mentions (7d): <b>20</b> <svg width="60" height="24" viewBox="0 0 60 24" style="vertical-align:middle"><rect x="0" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="8" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="16" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="24" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="32" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="40" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="48" y="0" width="7" height="24" fill="#6cf0f7"/></svg></span>
+                <span>News sentiment: ⚪ Neutral</span>
+            </div>
+            <div class="section">
+                <h3>📰 News Summary</h3>
+                <div>News summary unavailable for TSLA. Error: Error code: 403 - {'error': {'message': 'Project `proj_ICRNl8A8JSeew7DaB1FvAW79` does not have access to model `gpt-3.5-turbo`', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}</div>
+            </div>
+            <div class="section">
+                <h3>🤖 Reddit Summary</h3>
+                <div>Reddit summary unavailable for TSLA. Error: Error code: 403 - {'error': {'message': 'Project `proj_ICRNl8A8JSeew7DaB1FvAW79` does not have access to model `gpt-3.5-turbo`', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}</div>
+            </div>
+            <div class="links">
+                <a href="https://finance.yahoo.com/quote/TSLA" target="_blank">Yahoo Finance</a> | 
+                <a href="https://www.tradingview.com/symbols/TSLA/" target="_blank">TradingView</a> | 
+                <a href="https://www.reddit.com/search/?q=%24TSLA" target="_blank">Reddit Search</a>
+            </div>
+            <div class='highlight'>Most upvoted Reddit post:<br><b>TSLA Reddit post 1</b><br><a href='https://reddit.com/r/stocks/tsla/post1' target='_blank'>View post</a></div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <span class="ticker">$NVDA</span>
+                <span class="badges"></span>
+            </div>
+            <div class="card-row">
+                <span class="price">$N/A <span style="color:#65e19c;font-weight:600;">(+0.00%)</span></span>
+                <span class="sparkline"><svg width="60" height="24" viewBox="0 0 60 24" style="vertical-align:middle"><rect x="0" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="8" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="16" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="24" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="32" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="40" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="48" y="0" width="7" height="24" fill="#6cf0f7"/></svg></span>
+            </div>
+            <div class="stats">
+                <span>Market Cap: N/A</span>
+                <span>P/E: N/A</span>
+                <span>Vol: N/A</span>
+                <span>Earnings: N/A</span>
+            </div>
+            <div class="mentions">
+                <span>Reddit mentions (7d): <b>20</b> <svg width="60" height="24" viewBox="0 0 60 24" style="vertical-align:middle"><rect x="0" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="8" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="16" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="24" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="32" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="40" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="48" y="0" width="7" height="24" fill="#6cf0f7"/></svg></span>
+                <span>News sentiment: ⚪ Neutral</span>
+            </div>
+            <div class="section">
+                <h3>📰 News Summary</h3>
+                <div>News summary unavailable for NVDA. Error: Error code: 403 - {'error': {'message': 'Project `proj_ICRNl8A8JSeew7DaB1FvAW79` does not have access to model `gpt-3.5-turbo`', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}</div>
+            </div>
+            <div class="section">
+                <h3>🤖 Reddit Summary</h3>
+                <div>Reddit summary unavailable for NVDA. Error: Error code: 403 - {'error': {'message': 'Project `proj_ICRNl8A8JSeew7DaB1FvAW79` does not have access to model `gpt-3.5-turbo`', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}</div>
+            </div>
+            <div class="links">
+                <a href="https://finance.yahoo.com/quote/NVDA" target="_blank">Yahoo Finance</a> | 
+                <a href="https://www.tradingview.com/symbols/NVDA/" target="_blank">TradingView</a> | 
+                <a href="https://www.reddit.com/search/?q=%24NVDA" target="_blank">Reddit Search</a>
+            </div>
+            <div class='highlight'>Most upvoted Reddit post:<br><b>NVDA Reddit post 1</b><br><a href='https://reddit.com/r/stocks/nvda/post1' target='_blank'>View post</a></div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <span class="ticker">$MSFT</span>
+                <span class="badges"></span>
+            </div>
+            <div class="card-row">
+                <span class="price">$N/A <span style="color:#65e19c;font-weight:600;">(+0.00%)</span></span>
+                <span class="sparkline"><svg width="60" height="24" viewBox="0 0 60 24" style="vertical-align:middle"><rect x="0" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="8" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="16" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="24" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="32" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="40" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="48" y="0" width="7" height="24" fill="#6cf0f7"/></svg></span>
+            </div>
+            <div class="stats">
+                <span>Market Cap: N/A</span>
+                <span>P/E: N/A</span>
+                <span>Vol: N/A</span>
+                <span>Earnings: N/A</span>
+            </div>
+            <div class="mentions">
+                <span>Reddit mentions (7d): <b>20</b> <svg width="60" height="24" viewBox="0 0 60 24" style="vertical-align:middle"><rect x="0" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="8" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="16" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="24" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="32" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="40" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="48" y="0" width="7" height="24" fill="#6cf0f7"/></svg></span>
+                <span>News sentiment: ⚪ Neutral</span>
+            </div>
+            <div class="section">
+                <h3>📰 News Summary</h3>
+                <div>News summary unavailable for MSFT. Error: Error code: 403 - {'error': {'message': 'Project `proj_ICRNl8A8JSeew7DaB1FvAW79` does not have access to model `gpt-3.5-turbo`', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}</div>
+            </div>
+            <div class="section">
+                <h3>🤖 Reddit Summary</h3>
+                <div>Reddit summary unavailable for MSFT. Error: Error code: 403 - {'error': {'message': 'Project `proj_ICRNl8A8JSeew7DaB1FvAW79` does not have access to model `gpt-3.5-turbo`', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}</div>
+            </div>
+            <div class="links">
+                <a href="https://finance.yahoo.com/quote/MSFT" target="_blank">Yahoo Finance</a> | 
+                <a href="https://www.tradingview.com/symbols/MSFT/" target="_blank">TradingView</a> | 
+                <a href="https://www.reddit.com/search/?q=%24MSFT" target="_blank">Reddit Search</a>
+            </div>
+            <div class='highlight'>Most upvoted Reddit post:<br><b>MSFT Reddit post 1</b><br><a href='https://reddit.com/r/stocks/msft/post1' target='_blank'>View post</a></div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <span class="ticker">$GOOG</span>
+                <span class="badges"></span>
+            </div>
+            <div class="card-row">
+                <span class="price">$N/A <span style="color:#65e19c;font-weight:600;">(+0.00%)</span></span>
+                <span class="sparkline"><svg width="60" height="24" viewBox="0 0 60 24" style="vertical-align:middle"><rect x="0" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="8" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="16" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="24" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="32" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="40" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="48" y="0" width="7" height="24" fill="#6cf0f7"/></svg></span>
+            </div>
+            <div class="stats">
+                <span>Market Cap: N/A</span>
+                <span>P/E: N/A</span>
+                <span>Vol: N/A</span>
+                <span>Earnings: N/A</span>
+            </div>
+            <div class="mentions">
+                <span>Reddit mentions (7d): <b>20</b> <svg width="60" height="24" viewBox="0 0 60 24" style="vertical-align:middle"><rect x="0" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="8" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="16" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="24" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="32" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="40" y="24" width="7" height="0" fill="#6cf0f7"/><rect x="48" y="0" width="7" height="24" fill="#6cf0f7"/></svg></span>
+                <span>News sentiment: ⚪ Neutral</span>
+            </div>
+            <div class="section">
+                <h3>📰 News Summary</h3>
+                <div>News summary unavailable for GOOG. Error: Error code: 403 - {'error': {'message': 'Project `proj_ICRNl8A8JSeew7DaB1FvAW79` does not have access to model `gpt-3.5-turbo`', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}</div>
+            </div>
+            <div class="section">
+                <h3>🤖 Reddit Summary</h3>
+                <div>Reddit summary unavailable for GOOG. Error: Error code: 403 - {'error': {'message': 'Project `proj_ICRNl8A8JSeew7DaB1FvAW79` does not have access to model `gpt-3.5-turbo`', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}</div>
+            </div>
+            <div class="links">
+                <a href="https://finance.yahoo.com/quote/GOOG" target="_blank">Yahoo Finance</a> | 
+                <a href="https://www.tradingview.com/symbols/GOOG/" target="_blank">TradingView</a> | 
+                <a href="https://www.reddit.com/search/?q=%24GOOG" target="_blank">Reddit Search</a>
+            </div>
+            <div class='highlight'>Most upvoted Reddit post:<br><b>GOOG Reddit post 1</b><br><a href='https://reddit.com/r/stocks/goog/post1' target='_blank'>View post</a></div>
+        </div>
+        
+    </div>
+    <footer>
+        <span>🚀 Powered by AI Digest &bull; <a href="https://github.com/AiStockDigest">GitHub</a></span>
+        <br>
+        <br>
+        <strong>FAQ:</strong> This digest summarizes recent news and Reddit discussion for trending stocks. Sparkline shows 7-day Reddit mention trend. Sentiment is analyzed automatically; data may be incomplete or delayed. Use direct links for more info.
+    </footer>
+</body>
+</html>
