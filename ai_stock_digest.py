@@ -1,4 +1,4 @@
-# AI Stock Digest: Fully Automated Top 5 Daily Summary Web App (Reddit + News + Price/Sentiment Charts)
+# AI Stock Digest: Fully Automated Top 5 Daily Summary Web App (Reddit + Twitter + News + Price/Sentiment Charts)
 
 import praw
 import re
@@ -9,8 +9,7 @@ import matplotlib.pyplot as plt
 import os
 from datetime import datetime, timedelta
 from collections import Counter
-import pandas as pd
-import pickle
+
 
 # Reddit setup with read-only mode
 reddit = praw.Reddit(
@@ -23,14 +22,8 @@ reddit.read_only = True
 # OpenAI key from environment
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Try fuzzywuzzy
-try:
-    from fuzzywuzzy import fuzz
-except ImportError:
-    print("fuzzywuzzy is not installed. Fuzzy matching will be disabled.")
-    fuzz = None
+import pandas as pd
 
-# Get all tickers from NASDAQ/NYSE (fallback to S&P + Russell)
 def get_all_us_tickers():
     nasdaq_url = 'https://old.nasdaq.com/screening/companies-by-industry.aspx?exchange=NASDAQ&render=download'
     nyse_url = 'https://old.nasdaq.com/screening/companies-by-industry.aspx?exchange=NYSE&render=download'
@@ -42,11 +35,18 @@ def get_all_us_tickers():
         return tickers
     except Exception as e:
         print("Error fetching ticker list:", e)
+                # Expanded fallback: S&P 500 + Russell 2000 tickers
         sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]['Symbol'].tolist()
         russell = pd.read_html('https://en.wikipedia.org/wiki/Russell_2000_Index')[2]['Ticker'].tolist()
         return list(set(sp500 + russell))
 
-# Build lookup dict for ticker name variants
+try:
+    from fuzzywuzzy import fuzz
+except ImportError:
+    print("fuzzywuzzy is not installed. Fuzzy matching will be disabled.")
+    fuzz = None
+import pickle
+
 def build_ticker_lookup():
     cache_file = "ticker_lookup_cache.pkl"
     if os.path.exists(cache_file):
@@ -91,18 +91,17 @@ def fuzzy_match(input_str, lookup_dict, threshold=80):
     input_str = input_str.lower()
     for ticker, variants in lookup_dict.items():
         for variant in variants:
-            if fuzz and fuzz.ratio(input_str, variant) >= threshold:
+            if fuzz.ratio(input_str, variant) >= threshold:
                 return ticker
     return None
 
-# Get trending tickers from Reddit
 def get_top_discussed_tickers(limit=10, subs=["stocks", "wallstreetbets"], hours=24):
     end_time = datetime.utcnow()
     start_time = end_time - timedelta(hours=hours)
     ticker_counter = Counter()
     for sub in subs:
         subreddit = reddit.subreddit(sub)
-        for post in subreddit.new(limit=500):
+        for post in subreddit.new(limit=500):  # Increase or decrease this depending on performance
             if datetime.utcfromtimestamp(post.created_utc) < start_time:
                 continue
             tickers = re.findall(r'\$[A-Z]{1,5}', post.title + " " + post.selftext)
@@ -111,6 +110,7 @@ def get_top_discussed_tickers(limit=10, subs=["stocks", "wallstreetbets"], hours
 
 TICKER_LIST = get_top_discussed_tickers()
 TICKER_LOOKUP = build_ticker_lookup()
+
 
 def scrape_reddit(subs=["stocks", "wallstreetbets"], limit=50):
     posts = []
@@ -149,9 +149,12 @@ def get_top_tickers(reddit_posts, news_items):
     return [t[0] for t in most_common]
 
 def summarize_ticker(ticker, reddit_posts, news_items):
-    reddit_texts = [p['title'] + "\n" + p['text'] for p in reddit_posts if p['ticker'] == ticker]
+    reddit_texts = [p['title'] + "
+" + p['text'] for p in reddit_posts if p['ticker'] == ticker]
     news_texts = [n['title'] for n in news_items if n['ticker'] == ticker]
-    combined = "\n\n".join(reddit_texts + news_texts)[:7000]
+    combined = "
+
+".join(reddit_texts + news_texts)[:7000]
 
     prompt = f"""
     Summarize all the Reddit posts and news headlines below about ${ticker} in 2 clickbait-style paragraphs. Then include a TL;DR of 3 bullet points.
@@ -160,8 +163,8 @@ def summarize_ticker(ticker, reddit_posts, news_items):
     {combined}
     """
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4",  # or "gpt-3.5-turbo" to save cost
+    response = openai.chat.completions.create(
+        model="gpt-4",
         messages=[{"role": "user", "content": prompt}]
     )
     return response["choices"][0]["message"]["content"]
@@ -195,6 +198,8 @@ def run_daily_digest():
         f.write(html)
     print("✔ AI Stock Digest written to daily_digest.html")
 
+
 if __name__ == "__main__":
     run_daily_digest()
+
 
