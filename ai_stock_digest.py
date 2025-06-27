@@ -189,7 +189,7 @@ def summarize_ticker(ticker, reddit_posts, news_items):
     try:
         log(f"Summarizing {ticker} with model {OPENAI_MODEL}...")
         response = openai.chat.completions.create(
-            model=OPENAI_MODEL,
+            model="gpt-3.5-turbo-16k",
             messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content
