@@ -199,7 +199,8 @@ def summarize_ticker(ticker, reddit_posts, news_items):
         return response.choices[0].message.content
     except Exception as e:
         log(f"Error summarizing {ticker}: {e}")
-        return f"Summary unavailable for {ticker}."
+        # Show the error message in the output for easier debugging
+        return f"Summary unavailable for {ticker}. Error: {e}"
 
 def build_html(summaries):
     html_blocks = ""
