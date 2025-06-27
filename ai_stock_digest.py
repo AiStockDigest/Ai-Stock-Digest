@@ -1,5 +1,3 @@
-# AI Stock Digest: Fully Automated Top 5 Daily Summary Web App (Reddit + Twitter + News + Price/Sentiment Charts)
-
 import praw
 import re
 import openai
@@ -9,7 +7,8 @@ import matplotlib.pyplot as plt
 import os
 from datetime import datetime, timedelta
 from collections import Counter
-
+import pandas as pd
+import pickle
 
 # Reddit setup with read-only mode
 reddit = praw.Reddit(
@@ -22,8 +21,6 @@ reddit.read_only = True
 # OpenAI key from environment
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-import pandas as pd
-
 def get_all_us_tickers():
     nasdaq_url = 'https://old.nasdaq.com/screening/companies-by-industry.aspx?exchange=NASDAQ&render=download'
     nyse_url = 'https://old.nasdaq.com/screening/companies-by-industry.aspx?exchange=NYSE&render=download'
@@ -35,7 +32,7 @@ def get_all_us_tickers():
         return tickers
     except Exception as e:
         print("Error fetching ticker list:", e)
-                # Expanded fallback: S&P 500 + Russell 2000 tickers
+        # Expanded fallback: S&P 500 + Russell 2000 tickers
         sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]['Symbol'].tolist()
         russell = pd.read_html('https://en.wikipedia.org/wiki/Russell_2000_Index')[2]['Ticker'].tolist()
         return list(set(sp500 + russell))
@@ -45,7 +42,6 @@ try:
 except ImportError:
     print("fuzzywuzzy is not installed. Fuzzy matching will be disabled.")
     fuzz = None
-import pickle
 
 def build_ticker_lookup():
     cache_file = "ticker_lookup_cache.pkl"
@@ -88,6 +84,8 @@ def build_ticker_lookup():
 
 # Optional fuzzy match utility
 def fuzzy_match(input_str, lookup_dict, threshold=80):
+    if fuzz is None:
+        return None
     input_str = input_str.lower()
     for ticker, variants in lookup_dict.items():
         for variant in variants:
@@ -108,9 +106,9 @@ def get_top_discussed_tickers(limit=10, subs=["stocks", "wallstreetbets"], hours
             ticker_counter.update([t.strip("$") for t in tickers])
     return [ticker for ticker, _ in ticker_counter.most_common(limit)]
 
-TICKER_LIST = get_top_discussed_tickers()
+# ---- MAIN FIX: Use all tickers for lookup, not just most discussed ----
+TICKER_LIST = get_all_us_tickers()
 TICKER_LOOKUP = build_ticker_lookup()
-
 
 def scrape_reddit(subs=["stocks", "wallstreetbets"], limit=50):
     posts = []
@@ -131,7 +129,9 @@ def scrape_reddit(subs=["stocks", "wallstreetbets"], limit=50):
 def scrape_news():
     feeds = []
     base_url = "https://news.google.com/rss/search?q={ticker}+stock&hl=en-US&gl=US&ceid=US:en"
-    for ticker in TICKER_LIST:
+    # Use only the most discussed tickers for news, for speed
+    top_discussed = get_top_discussed_tickers(limit=10)
+    for ticker in top_discussed:
         url = base_url.format(ticker=ticker)
         parsed = feedparser.parse(url)
         for entry in parsed.entries[:5]:
@@ -149,17 +149,11 @@ def get_top_tickers(reddit_posts, news_items):
     return [t[0] for t in most_common]
 
 def summarize_ticker(ticker, reddit_posts, news_items):
-    reddit_texts = [p['title'] + "
-" + p['text'] for p in reddit_posts if p['ticker'] == ticker]
+    reddit_texts = [p['title'] + "\n" + p['text'] for p in reddit_posts if p['ticker'] == ticker]
     news_texts = [n['title'] for n in news_items if n['ticker'] == ticker]
-    combined = "
+    combined = "\n\n".join(reddit_texts + news_texts)[:7000]
 
-".join(reddit_texts + news_texts)[:7000]
-
-    prompt = f"Summarize all the Reddit posts and news headlines below about ${ticker} in 2 clickbait-style paragraphs. Then include a TL;DR of 3 bullet points.
-
-Text:
-{combined}"
+    prompt = f"Summarize all the Reddit posts and news headlines below about ${ticker} in 2 clickbait-style paragraphs. Then include a TL;DR of 3 bullet points.\n\nText:\n{combined}"
 
     try:
         response = openai.chat.completions.create(
@@ -167,9 +161,6 @@ Text:
             messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content
-    except Exception as e:
-        print(f"Error summarizing {ticker}:", e)
-        return f"Summary unavailable for {ticker}."
     except Exception as e:
         print(f"Error summarizing {ticker}:", e)
         return f"Summary unavailable for {ticker}."
@@ -203,8 +194,5 @@ def run_daily_digest():
         f.write(html)
     print("✔ AI Stock Digest written to daily_digest.html")
 
-
 if __name__ == "__main__":
     run_daily_digest()
-
-
