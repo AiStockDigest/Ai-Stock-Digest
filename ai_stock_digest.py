@@ -11,7 +11,7 @@ import os
 from datetime import datetime, timedelta
 from collections import Counter
 
-# Reddit API setup (read-only)
+# Reddit setup with read-only mode
 reddit = praw.Reddit(
     client_id=os.getenv("REDDIT_CLIENT_ID"),
     client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
