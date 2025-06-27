@@ -4,3 +4,4 @@ feedparser
 yfinance
 snscrape
 matplotlib
+fuzzywuzzy[speedup]
