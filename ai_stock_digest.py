@@ -167,7 +167,7 @@ def summarize_ticker(ticker, reddit_posts, news_items):
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}]
     )
-    return response["choices"][0]["message"]["content"]
+    return response.choices[0].message.content
 
 def build_html(summaries):
     html_blocks = ""
