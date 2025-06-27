@@ -169,6 +169,21 @@ def summarize_ticker(ticker, reddit_posts, news_items):
     )
     return response.choices[0].message.content
 
+".join(reddit_texts + news_texts)[:7000]
+
+    prompt = f"""
+    Summarize all the Reddit posts and news headlines below about ${ticker} in 2 clickbait-style paragraphs. Then include a TL;DR of 3 bullet points.
+
+    Text:
+    {combined}
+    """
+
+    response = openai.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.choices[0].message.content
+
 def build_html(summaries):
     html_blocks = ""
     for ticker, content in summaries.items():
@@ -201,7 +216,5 @@ def run_daily_digest():
 
 if __name__ == "__main__":
     run_daily_digest()
-
-
 
 
