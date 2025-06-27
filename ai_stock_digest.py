@@ -1,4 +1,3 @@
-# Ai-Stock-Digest
 # AI Stock Digest: Fully Automated Top 5 Daily Summary Web App (Reddit + Twitter + News + Price/Sentiment Charts)
 
 import praw
@@ -12,21 +11,23 @@ import os
 from datetime import datetime, timedelta
 from collections import Counter
 
+# Reddit API setup (read-only)
 reddit = praw.Reddit(
-    client_id="YOUR_CLIENT_ID",
-    client_secret="YOUR_CLIENT_SECRET",
+    client_id=os.getenv("REDDIT_CLIENT_ID"),
+    client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
     user_agent="stock_digest_scraper"
 )
+reddit.read_only = True
 
-openai.api_key = "YOUR_OPENAI_KEY"
+# OpenAI key
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
+# Define tickers to track
 TICKER_LIST = ["AAPL", "TSLA", "NVDA", "AMD", "GOOG", "AMZN", "META", "MSFT", "GME", "NFLX", "BABA", "UBER", "DIS", "SPY"]
 
-# Helper to extract ticker symbols from text
 def extract_tickers(text):
     return re.findall(r'\$[A-Z]{1,5}', text)
 
-# Scrape Reddit hot posts
 def scrape_reddit(subs=["stocks", "wallstreetbets"], limit=50):
     posts = []
     for sub in subs:
@@ -43,7 +44,6 @@ def scrape_reddit(subs=["stocks", "wallstreetbets"], limit=50):
                 })
     return posts
 
-# Scrape Google News RSS headlines
 def scrape_news():
     feeds = []
     base_url = "https://news.google.com/rss/search?q={ticker}+stock&hl=en-US&gl=US&ceid=US:en"
@@ -59,7 +59,6 @@ def scrape_news():
             })
     return feeds
 
-# Scrape Twitter using snscrape with basic bot filtering
 def scrape_twitter(tickers, limit=50):
     tweets = []
     for ticker in tickers:
@@ -77,13 +76,11 @@ def scrape_twitter(tickers, limit=50):
                 })
     return tweets
 
-# Combine all mentions to determine trending tickers
 def get_top_tickers(reddit_posts, news_items, tweet_items):
     all_mentions = [p["ticker"] for p in reddit_posts] + [n["ticker"] for n in news_items] + [t["ticker"] for t in tweet_items]
     most_common = Counter(all_mentions).most_common(5)
     return [t[0] for t in most_common]
 
-# GPT-4 summarization per ticker
 def summarize_ticker(ticker, reddit_posts, news_items, tweet_items):
     reddit_texts = [p['title'] + "\n" + p['text'] for p in reddit_posts if p['ticker'] == ticker]
     news_texts = [n['title'] for n in news_items if n['ticker'] == ticker]
@@ -103,13 +100,11 @@ def summarize_ticker(ticker, reddit_posts, news_items, tweet_items):
     )
     return response["choices"][0]["message"]["content"]
 
-# Create and save price and mention volume chart for a ticker
 def generate_price_and_volume_chart(ticker, reddit_posts, tweet_data):
     data = yf.download(ticker, period="5d", interval="1h")
     if data.empty:
         return None
 
-    # Count mentions per hour
     mention_times = [datetime.fromisoformat(p['timestamp']) for p in reddit_posts + tweet_data if p['ticker'] == ticker]
     hours = [t.replace(minute=0, second=0, microsecond=0) for t in mention_times]
     counts = Counter(hours)
@@ -118,7 +113,6 @@ def generate_price_and_volume_chart(ticker, reddit_posts, tweet_data):
     mention_counts_y = [x[1] for x in hourly_mentions]
 
     fig, ax1 = plt.subplots(figsize=(8, 4))
-
     ax1.set_title(f"{ticker} Price & Mentions (5 Days)")
     ax1.plot(data.index, data['Close'], color='tab:blue', label='Price')
     ax1.set_ylabel('Price ($)', color='tab:blue')
@@ -135,7 +129,6 @@ def generate_price_and_volume_chart(ticker, reddit_posts, tweet_data):
     plt.close()
     return filename
 
-# Build HTML landing page with embedded charts
 def build_html(summaries):
     html_blocks = ""
     for ticker, content in summaries.items():
@@ -153,7 +146,6 @@ def build_html(summaries):
     </html>
     """
 
-# Main runner
 def run_daily_digest():
     reddit_data = scrape_reddit()
     news_data = scrape_news()
