@@ -2,60 +2,91 @@ import praw
 import re
 import openai
 import feedparser
-import yfinance as yf
-import matplotlib.pyplot as plt
 import os
 from datetime import datetime, timedelta
 from collections import Counter
 import pandas as pd
 import pickle
+import sys
+
+# --- Logging utility ---
+def log(msg):
+    print(f"[{datetime.utcnow().isoformat()}] {msg}", flush=True)
+
+# --- Environment/API setup checks ---
+REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
+REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+if not REDDIT_CLIENT_ID or not REDDIT_CLIENT_SECRET:
+    log("Missing Reddit API credentials. Exiting.")
+    sys.exit(1)
+
+if not OPENAI_API_KEY:
+    log("Missing OpenAI API key. Exiting.")
+    sys.exit(1)
 
 # Reddit setup with read-only mode
 reddit = praw.Reddit(
-    client_id=os.getenv("REDDIT_CLIENT_ID"),
-    client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
+    client_id=REDDIT_CLIENT_ID,
+    client_secret=REDDIT_CLIENT_SECRET,
     user_agent="stock_digest_scraper"
 )
 reddit.read_only = True
 
-# OpenAI key from environment
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = OPENAI_API_KEY
 
+# --- Ticker utilities ---
 def get_all_us_tickers():
     nasdaq_url = 'https://old.nasdaq.com/screening/companies-by-industry.aspx?exchange=NASDAQ&render=download'
     nyse_url = 'https://old.nasdaq.com/screening/companies-by-industry.aspx?exchange=NYSE&render=download'
+    cache_file = "all_us_tickers_cache.pkl"
+    if os.path.exists(cache_file):
+        log("Loading cached ticker list.")
+        try:
+            with open(cache_file, "rb") as f:
+                return pickle.load(f)
+        except Exception:
+            pass
     try:
-        nasdaq_df = pd.read_csv(nasdaq_url)
-        nyse_df = pd.read_csv(nyse_url)
+        log("Downloading ticker lists...")
+        nasdaq_df = pd.read_csv(nasdaq_url, timeout=15)
+        nyse_df = pd.read_csv(nyse_url, timeout=15)
         combined_df = pd.concat([nasdaq_df, nyse_df])
         tickers = combined_df['Symbol'].dropna().unique().tolist()
+        if tickers:
+            with open(cache_file, "wb") as f:
+                pickle.dump(tickers, f)
+        log(f"Loaded {len(tickers)} tickers from exchanges.")
         return tickers
     except Exception as e:
-        print("Error fetching ticker list:", e)
-        # Expanded fallback: S&P 500 + Russell 2000 tickers
-        sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]['Symbol'].tolist()
-        russell = pd.read_html('https://en.wikipedia.org/wiki/Russell_2000_Index')[2]['Ticker'].tolist()
-        return list(set(sp500 + russell))
+        log(f"Error fetching ticker list: {e}")
+        # Small fallback list for testing
+        return ["AAPL", "GOOG", "TSLA", "MSFT", "NVDA"]
 
 try:
     from fuzzywuzzy import fuzz
 except ImportError:
-    print("fuzzywuzzy is not installed. Fuzzy matching will be disabled.")
+    log("fuzzywuzzy not installed. Fuzzy matching disabled.")
     fuzz = None
 
-def build_ticker_lookup():
+def build_ticker_lookup(ticker_list):
     cache_file = "ticker_lookup_cache.pkl"
     if os.path.exists(cache_file):
-        with open(cache_file, "rb") as f:
-            return pickle.load(f)
-
+        log("Loading cached ticker lookup.")
+        try:
+            with open(cache_file, "rb") as f:
+                return pickle.load(f)
+        except Exception:
+            pass
     lookup = {}
     try:
-        sp500_table = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
+        log("Building ticker lookup from Wikipedia S&P 500...")
+        sp500_table = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies', timeout=20)[0]
         for _, row in sp500_table.iterrows():
             ticker = row['Symbol']
             name = row['Security']
-            if ticker not in TICKER_LIST:
+            if ticker not in ticker_list:
                 continue
             variations = set()
             base = name.lower()
@@ -73,16 +104,13 @@ def build_ticker_lookup():
             ])
             lookup[ticker] = list(variations)
     except Exception as e:
-        print("Error building lookup:", e)
-        for ticker in TICKER_LIST:
+        log(f"Error building lookup: {e}")
+        for ticker in ticker_list:
             lookup[ticker] = [ticker.lower()]
-
     with open(cache_file, "wb") as f:
         pickle.dump(lookup, f)
-
     return lookup
 
-# Optional fuzzy match utility
 def fuzzy_match(input_str, lookup_dict, threshold=80):
     if fuzz is None:
         return None
@@ -99,48 +127,57 @@ def get_top_discussed_tickers(limit=10, subs=["stocks", "wallstreetbets"], hours
     ticker_counter = Counter()
     for sub in subs:
         subreddit = reddit.subreddit(sub)
-        for post in subreddit.new(limit=500):  # Increase or decrease this depending on performance
-            if datetime.utcfromtimestamp(post.created_utc) < start_time:
-                continue
-            tickers = re.findall(r'\$[A-Z]{1,5}', post.title + " " + post.selftext)
-            ticker_counter.update([t.strip("$") for t in tickers])
+        try:
+            for post in subreddit.new(limit=100):  # Lowered for speed
+                if datetime.utcfromtimestamp(post.created_utc) < start_time:
+                    continue
+                tickers = re.findall(r'\$[A-Z]{1,5}', post.title + " " + post.selftext)
+                ticker_counter.update([t.strip("$") for t in tickers])
+        except Exception as e:
+            log(f"Error scraping subreddit {sub}: {e}")
     return [ticker for ticker, _ in ticker_counter.most_common(limit)]
 
-# ---- MAIN FIX: Use all tickers for lookup, not just most discussed ----
 TICKER_LIST = get_all_us_tickers()
-TICKER_LOOKUP = build_ticker_lookup()
+TICKER_LOOKUP = build_ticker_lookup(TICKER_LIST)
 
-def scrape_reddit(subs=["stocks", "wallstreetbets"], limit=50):
+def scrape_reddit(subs=["stocks", "wallstreetbets"], limit=20):
     posts = []
     for sub in subs:
         subreddit = reddit.subreddit(sub)
-        for post in subreddit.hot(limit=limit):
-            tickers = re.findall(r'\$[A-Z]{1,5}', post.title + " " + post.selftext)
-            for t in tickers:
-                posts.append({
-                    "ticker": t.strip("$"),
-                    "title": post.title,
-                    "text": post.selftext,
-                    "url": post.url,
-                    "timestamp": datetime.utcfromtimestamp(post.created_utc).isoformat()
-                })
+        try:
+            for post in subreddit.hot(limit=limit):
+                tickers = re.findall(r'\$[A-Z]{1,5}', post.title + " " + post.selftext)
+                for t in tickers:
+                    posts.append({
+                        "ticker": t.strip("$"),
+                        "title": post.title,
+                        "text": post.selftext,
+                        "url": post.url,
+                        "timestamp": datetime.utcfromtimestamp(post.created_utc).isoformat()
+                    })
+        except Exception as e:
+            log(f"Error scraping subreddit {sub}: {e}")
+    log(f"Scraped {len(posts)} Reddit posts.")
     return posts
 
 def scrape_news():
     feeds = []
     base_url = "https://news.google.com/rss/search?q={ticker}+stock&hl=en-US&gl=US&ceid=US:en"
-    # Use only the most discussed tickers for news, for speed
-    top_discussed = get_top_discussed_tickers(limit=10)
+    top_discussed = get_top_discussed_tickers(limit=5)
     for ticker in top_discussed:
         url = base_url.format(ticker=ticker)
-        parsed = feedparser.parse(url)
-        for entry in parsed.entries[:5]:
-            feeds.append({
-                "ticker": ticker,
-                "title": entry.title,
-                "link": entry.link,
-                "published": entry.published
-            })
+        try:
+            parsed = feedparser.parse(url)
+            for entry in parsed.entries[:2]:
+                feeds.append({
+                    "ticker": ticker,
+                    "title": entry.title,
+                    "link": entry.link,
+                    "published": entry.published
+                })
+        except Exception as e:
+            log(f"Error fetching news for {ticker}: {e}")
+    log(f"Scraped {len(feeds)} news items.")
     return feeds
 
 def get_top_tickers(reddit_posts, news_items):
@@ -152,17 +189,16 @@ def summarize_ticker(ticker, reddit_posts, news_items):
     reddit_texts = [p['title'] + "\n" + p['text'] for p in reddit_posts if p['ticker'] == ticker]
     news_texts = [n['title'] for n in news_items if n['ticker'] == ticker]
     combined = "\n\n".join(reddit_texts + news_texts)[:7000]
-
     prompt = f"Summarize all the Reddit posts and news headlines below about ${ticker} in 2 clickbait-style paragraphs. Then include a TL;DR of 3 bullet points.\n\nText:\n{combined}"
-
     try:
+        log(f"Summarizing {ticker}...")
         response = openai.chat.completions.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content
     except Exception as e:
-        print(f"Error summarizing {ticker}:", e)
+        log(f"Error summarizing {ticker}: {e}")
         return f"Summary unavailable for {ticker}."
 
 def build_html(summaries):
@@ -181,18 +217,20 @@ def build_html(summaries):
     )
 
 def run_daily_digest():
+    log("Starting Reddit scrape...")
     reddit_data = scrape_reddit()
+    log("Starting news scrape...")
     news_data = scrape_news()
+    log("Determining top 5 tickers...")
     top_5 = get_top_tickers(reddit_data, news_data)
-
+    log(f"Top 5: {top_5}")
     summaries = {}
     for ticker in top_5:
         summaries[ticker] = summarize_ticker(ticker, reddit_data, news_data)
-
     html = build_html(summaries)
-    with open("daily_digest.html", "w") as f:
+    with open("daily_digest.html", "w", encoding="utf-8") as f:
         f.write(html)
-    print("✔ AI Stock Digest written to daily_digest.html")
+    log("✔ AI Stock Digest written to daily_digest.html")
 
 if __name__ == "__main__":
     run_daily_digest()
