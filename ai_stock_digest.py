@@ -9,11 +9,9 @@ import pandas as pd
 import pickle
 import sys
 
-# --- Logging utility ---
 def log(msg):
     print(f"[{datetime.utcnow().isoformat()}] {msg}", flush=True)
 
-# --- Environment/API setup checks ---
 REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -27,7 +25,6 @@ if not OPENAI_API_KEY:
     log("Missing OpenAI API key. Exiting.")
     sys.exit(1)
 
-# Reddit setup with read-only mode
 reddit = praw.Reddit(
     client_id=REDDIT_CLIENT_ID,
     client_secret=REDDIT_CLIENT_SECRET,
@@ -37,7 +34,6 @@ reddit.read_only = True
 
 openai.api_key = OPENAI_API_KEY
 
-# --- Ticker utilities ---
 def get_all_us_tickers():
     nasdaq_url = 'https://old.nasdaq.com/screening/companies-by-industry.aspx?exchange=NASDAQ&render=download'
     nyse_url = 'https://old.nasdaq.com/screening/companies-by-industry.aspx?exchange=NYSE&render=download'
@@ -62,7 +58,6 @@ def get_all_us_tickers():
         return tickers
     except Exception as e:
         log(f"Error fetching ticker list: {e}")
-        # Small fallback list for testing
         return ["AAPL", "GOOG", "TSLA", "MSFT", "NVDA"]
 
 try:
@@ -129,7 +124,7 @@ def get_top_discussed_tickers(limit=10, subs=["stocks", "wallstreetbets"], hours
     for sub in subs:
         subreddit = reddit.subreddit(sub)
         try:
-            for post in subreddit.new(limit=100):  # Lowered for speed
+            for post in subreddit.new(limit=100):
                 if datetime.utcfromtimestamp(post.created_utc) < start_time:
                     continue
                 tickers = re.findall(r'\$[A-Z]{1,5}', post.title + " " + post.selftext)
@@ -200,7 +195,6 @@ def summarize_ticker(ticker, reddit_posts, news_items):
         return response.choices[0].message.content
     except Exception as e:
         log(f"Error summarizing {ticker}: {e}")
-        # Show the error message in the output for easier debugging
         return f"Summary unavailable for {ticker}. Error: {e}"
 
 def build_html(summaries):
