@@ -181,12 +181,15 @@ def get_reddit_highlight(reddit_posts, ticker):
     return max(filtered, key=lambda p: p.get("score", 0))
 
 def get_reddit_mentions_over_time(reddit_posts, ticker, days=7):
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     counts = [0]*days
     for p in reddit_posts:
         if ticker not in p['tickers']:
             continue
         ts = datetime.fromisoformat(p['timestamp'])
+        # Fix: Make naive datetimes aware (assume UTC if missing tzinfo)
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
         day_delta = (now - ts).days
         if 0 <= day_delta < days:
             counts[days-1-day_delta] += 1
