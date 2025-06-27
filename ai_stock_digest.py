@@ -15,7 +15,7 @@ def log(msg):
 REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")  # Default to gpt-3.5-turbo
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo-16k")  # Default to gpt-3.5-turbo
 
 if not REDDIT_CLIENT_ID or not REDDIT_CLIENT_SECRET:
     log("Missing Reddit API credentials. Exiting.")
