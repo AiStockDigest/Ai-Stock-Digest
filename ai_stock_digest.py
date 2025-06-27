@@ -193,16 +193,16 @@ def build_html(summaries):
     html_blocks = ""
     for ticker, content in summaries.items():
         html_blocks += f"<h2>${ticker}</h2><div>{content}</div><hr>"
-    return f"""
-    <html>
-    <head><title>AI Stock Digest - Top 5</title></head>
-    <body>
-    <h1> Top 5 Stocks Today</h1>
-    {html_blocks}
-    <footer><br><i>Updated daily by AI Digest</i></footer>
-    </body>
-    </html>
-    """
+    return (
+        "<html>"
+        "<head><title>AI Stock Digest - Top 5</title></head>"
+        "<body>"
+        "<h1>Top 5 Stocks Today</h1>"
+        f"{html_blocks}"
+        "<footer><br><i>Updated daily by AI Digest</i></footer>"
+        "</body>"
+        "</html>"
+    )
 
 def run_daily_digest():
     reddit_data = scrape_reddit()
@@ -217,6 +217,7 @@ def run_daily_digest():
     with open("daily_digest.html", "w") as f:
         f.write(html)
     print("✔ AI Stock Digest written to daily_digest.html")
+
 
 if __name__ == "__main__":
     run_daily_digest()
