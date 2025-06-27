@@ -17,6 +17,7 @@ def log(msg):
 REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")  # Default to gpt-3.5-turbo
 
 if not REDDIT_CLIENT_ID or not REDDIT_CLIENT_SECRET:
     log("Missing Reddit API credentials. Exiting.")
@@ -191,9 +192,9 @@ def summarize_ticker(ticker, reddit_posts, news_items):
     combined = "\n\n".join(reddit_texts + news_texts)[:7000]
     prompt = f"Summarize all the Reddit posts and news headlines below about ${ticker} in 2 clickbait-style paragraphs. Then include a TL;DR of 3 bullet points.\n\nText:\n{combined}"
     try:
-        log(f"Summarizing {ticker}...")
+        log(f"Summarizing {ticker} with model {OPENAI_MODEL}...")
         response = openai.chat.completions.create(
-            model="gpt-4",
+            model=OPENAI_MODEL,
             messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content
