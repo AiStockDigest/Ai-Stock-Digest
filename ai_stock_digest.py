@@ -25,12 +25,71 @@ reddit = praw.Reddit(
 )
 reddit.read_only = True
 
-# DEBUG: TEMP PRINT TO CONFIRM ENV VARIABLES ARE WORKING (REMOVE AFTER TESTING)
-print("CLIENT_ID:", os.getenv("REDDIT_CLIENT_ID"))
-print("CLIENT_SECRET:", os.getenv("REDDIT_CLIENT_SECRET"))
+# OpenAI key from environment
 
-# OpenAI key
+# Dynamically fetch entire US stock market tickers from NASDAQ and NYSE listings
+import pandas as pd
+
+def get_all_us_tickers():
+    nasdaq_url = 'https://old.nasdaq.com/screening/companies-by-industry.aspx?exchange=NASDAQ&render=download'
+    nyse_url = 'https://old.nasdaq.com/screening/companies-by-industry.aspx?exchange=NYSE&render=download'
+    try:
+        nasdaq_df = pd.read_csv(nasdaq_url)
+        nyse_df = pd.read_csv(nyse_url)
+        combined_df = pd.concat([nasdaq_df, nyse_df])
+        tickers = combined_df['Symbol'].dropna().unique().tolist()
+        return tickers
+    except Exception as e:
+        print("Error fetching ticker list:", e)
+                # Expanded fallback: S&P 500 + Russell 2000 tickers
+        sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]['Symbol'].tolist()
+        russell = pd.read_html('https://en.wikipedia.org/wiki/Russell_2000_Index')[2]['Ticker'].tolist()
+        return list(set(sp500 + russell))
+
+def build_ticker_lookup():
+    tickers = get_all_us_tickers()
+    lookup = {}
+    try:
+        sp500_table = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
+        for _, row in sp500_table.iterrows():
+            ticker = row['Symbol']
+            name = row['Security']
+            variations = set()
+            variations.add(ticker.lower())
+            variations.add(name.lower())
+            variations.add(name.replace(" ", "").lower())
+            variations.add(name.replace(" ", "").replace(".com", "").lower())
+            variations.add(name.lower().replace("inc.", ""))
+            variations.add(name.lower().replace("corp.", ""))
+            variations.add(name.lower().replace("co.", ""))
+            variations.add(name.lower().replace("inc", ""))
+            variations.add(name.lower().replace("corporation", ""))
+            variations.add(name.lower().split()[0])  # first word only
+            lookup[ticker] = list(set(variations))
+    except Exception as e:
+        print("Error building lookup:", e)
+        for ticker in tickers:
+            lookup[ticker] = [ticker.lower()]
+    return lookup
+
+TICKER_LIST = get_all_us_tickers()
+TICKER_LOOKUP = build_ticker_lookup()
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
+# Placeholder Twitter scraping function
+
+def scrape_twitter(tickers, limit=50):
+    print("Twitter scraping is disabled — using placeholder tweets.")
+    tweets = []
+    for ticker in tickers:
+        tweets.append({
+            "ticker": ticker,
+            "text": f"Placeholder tweet about ${ticker} (Twitter data unavailable)",
+            "user": "placeholder_bot",
+            "followers": 999,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+    return tweets
 
 # Define tickers to track
 TICKER_LIST = ["AAPL", "TSLA", "NVDA", "AMD", "GOOG", "AMZN", "META", "MSFT", "GME", "NFLX", "BABA", "UBER", "DIS", "SPY"]
