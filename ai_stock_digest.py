@@ -11,6 +11,12 @@ import os
 from datetime import datetime, timedelta
 from collections import Counter
 
+# ⛔️ Monkey patch to ignore SSL errors for Twitter
+import ssl
+import urllib3
+ssl._create_default_https_context = ssl._create_unverified_context
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 # Reddit setup with read-only mode
 reddit = praw.Reddit(
     client_id=os.getenv("REDDIT_CLIENT_ID"),
