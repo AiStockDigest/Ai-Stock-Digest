@@ -197,7 +197,7 @@ def build_html(summaries):
     <html>
     <head><title>AI Stock Digest - Top 5</title></head>
     <body>
-    <h1>🔥 Top 5 Stocks Today</h1>
+    <h1> Top 5 Stocks Today</h1>
     {html_blocks}
     <footer><br><i>Updated daily by AI Digest</i></footer>
     </body>
